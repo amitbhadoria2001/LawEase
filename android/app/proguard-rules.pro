@@ -123,15 +123,27 @@ services:
 import json
 
 def lambda_handler(event, context):
-    for record in event["Records"]:
-        bucket_name = record["s3"]["bucket"]["name"]
-        file_name = record["s3"]["object"]["key"]
+    for records in event["Records"]:
+        bucket_name = records["s3"]["bucket"]["name"]
+        key = records["s3"]["object"]["key"]
 
-        print("Bucket Name:", bucket_name)
-        print("Uploaded File:", file_name)
+        print(bucket_name)
+        print(key)
 
     return {
-        "statusCode": 200,
-        "body": json.dumps("S3 upload processed successfully")
+        'statusCode': 200,
+        'body': json.dumps('Hello from Lambda!')
     }
+
+-----------------------------------------------------------
+
+aamitbhadoria/automation:latest"docker build -t aamitbhadoria/automation:latest .
+docker push aamitbhadoria/automation:latest
+
+ssh admin@65.2.40.207 "sudo docker pull aamitbhadoria/automation:latest"
+ssh admin@65.2.40.207 "sudo docker rm -f myweb || true"
+ssh admin@65.2.40.207 "sudo docker run --name myweb -d -p 80:80 aamitbhadoria/automation:latest"
+
+--------------------------------------------------------------
+
 
