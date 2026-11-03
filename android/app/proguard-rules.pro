@@ -10,7 +10,6 @@
 # Add any project specific keep options here:
 
 -----------------------------------------------------
-
 ---
 - name: User and Apache configuration
   hosts: webserver
@@ -38,47 +37,6 @@
 ansible-playbook -i inventory playbook.yml
 
 -------------------------------------------------
-upstream apache_backends {
-    server web1:80;
-    server web2:80;
-}
-
-server {
-    listen 80;
-
-    location / {
-        proxy_pass http://apache_backends;
-    }
-}
----------------------------------------------------
-services:
-  proxy:
-    image: nginx:alpine
-    ports:
-      - "8088:80"
-    volumes:
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-    depends_on:
-      - web1
-      - web2
-    restart: unless-stopped
-
-  web1:
-    image: httpd:alpine
-    volumes:
-      - ./web1.html:/usr/local/apache2/htdocs/index.html:ro
-    restart: unless-stopped
-
-  web2:
-    image: httpd:alpine
-    volumes:
-      - ./web2.html:/usr/local/apache2/htdocs/index.html:ro
-    restart: unless-stopped
-
-    sudo docker compose up -d
-
-    _____________________________________________________________
-
 ---
 - name: Configure web server
   hosts: webserver
@@ -114,11 +72,105 @@ services:
     - ansible.builtin.service:
         name: mariadb
         state: started
-        enabled: true
+        enabled: true        
+-------------------------------------------------------------
+default.conf - 
 
-        ansible-playbook -i inventory playbook.yml
+upstream apache_backends {
+    server web1:80;
+    server web2:80;
+}
+
+server {
+    listen 80;
+
+    location / {
+        proxy_pass http://apache_backends;
+    }
+}
+---------------------------------------------------
+compose.yaml - 
+
+services:
+  proxy:
+    image: nginx:alpine
+    ports:
+      - "8088:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - web1
+      - web2
+    restart: unless-stopped
+
+  web1:
+    image: httpd:alpine
+    volumes:
+      - ./web1.html:/usr/local/apache2/htdocs/index.html:ro
+    restart: unless-stopped
+
+  web2:
+    image: httpd:alpine
+    volumes:
+      - ./web2.html:/usr/local/apache2/htdocs/index.html:ro
+    restart: unless-stopped
+
+    sudo docker compose up -d
+
+    ---------------------------------------------------------
+    index.html /usr/local/apache2/htdocs/index.html
+    /usr/share/ngnix/html/
+    /var/www/html
+
+    <a href="http://YOUR-IP:8081">Go to ITISS</a>
+    <a href="http://YOUR-IP">Go to IACSD</a>
+   ----------------------------------------------------------------- 
+    
+    server {
+    listen 80;
+
+    location /iacsd/ {
+        proxy_pass http://iacsd/;
+    }
+
+    location /itiss/ {
+        proxy_pass http://itiss/;
+    }
+}
+-------------------------------------------------------------------
+services:
+  proxy:
+    image: nginx:alpine
+    ports:
+      - "8088:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - iacsd
+      - itiss
+    restart: unless-stopped
+
+  iacsd:
+    build: ./iacsd
+    restart: unless-stopped
+
+  itiss:
+    build: ./itiss
+    restart: unless-stopped
+
 ----------------------------------------------------
+SWARM - 
 
+sudo usermod admin -aG docker
+sudo docker swarm init --advertise-addr <MANAGER_IP>
+docker login
+sudo docker pull ammarqais28/itiss
+sudo docker service create --name myapp -p 80:80 ammarqais28/itiss
+sudo docker service ls
+sudo docker service ps myapp
+sudo docker service scale myapp=3
+
+---------------------------------------------------
 
 import json
 
